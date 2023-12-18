@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InformationRateModule } from './information_rate/information_rate.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { InformationRateModule } from './information_rate/information_rate.modul
       autoLoadEntities: true, //carga las entidades que vamos definiendo poco a poco
       synchronize: true //En produccion false, este parametro sirve para hacer migraciones
     }),
-    InformationRateModule
+    InformationRateModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

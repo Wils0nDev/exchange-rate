@@ -24,60 +24,50 @@ export class InformationRateService {
   }
 
   async findAll() {
-   try {
       const information = await this.InformationRateRepository.find()
       return  information;
-   } catch (error) {
-    console.log(error)
-    this.handleExceptions(error)
-   }
+   
   }
 
   async findOne(id: number) {
-    //try {
-
+ 
       const information = await this.InformationRateRepository.findOneBy({Id: id})
       if(!information)  throw new NotFoundException(`Tasa de cambio con id ${id} no existe`)
       return  information;
 
-    // } catch (error) {
-    //   console.log(error)
-    //   this.handleExceptions(error)
-    // }
+ 
   }
 
   async update(id: number, updateInformationRateDto: UpdateInformationRateDto) {
-    const information = await this.InformationRateRepository.update(id,updateInformationRateDto)
-    return information
+    const information = await this.InformationRateRepository.preload({
+      Id:id,
+      ...updateInformationRateDto
+    });
+    if(!information) throw new NotFoundException(`Tasa de cambio con id ${id} no existe`);
+    await this.InformationRateRepository.save(information);
+    return information;
   } 
 
   async remove(id: number) {
-    const information = await this.findOne(id)
-    await this.InformationRateRepository.remove(information)
-    
+    const information = await this.findOne(id);
+    const resp = await this.InformationRateRepository.remove(information);
+    if(resp) return {ok:true, message : 'Elimiando correctamente'};
+    return resp
   }
 
-  async calculate(calculateRateDto: CalculateRateDto) {
-    try {
-        const information = await this.InformationRateRepository.findOneBy({
-          OriginalCurrency : calculateRateDto.OriginalCurrency,
-          FateCurrency : calculateRateDto.FateCurrency
+  async calculate({OriginalCurrency,FateCurrency,Amount}: CalculateRateDto) {
+        const {ExchangeRate} = await this.InformationRateRepository.findOneBy({
+          OriginalCurrency,
+          FateCurrency
         }) 
-        const amount = calculateRateDto.Amount * information.ExchangeRate;
+        const amount = Amount * ExchangeRate;
         return {amount};
-    } catch (error) {
-      this.handleExceptions(error)
-    }
+   
   }
 
   private handleExceptions(error:any){
-    if(error.code == '23505'){
+    if(error.code == '23505')
       throw new BadRequestException(error.detail)
-    }
-    if(error.code == '22P02'){
-      throw new BadRequestException(error.detail)
-    }
-    
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs!')
   }
